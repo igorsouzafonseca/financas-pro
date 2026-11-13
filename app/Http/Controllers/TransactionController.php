@@ -78,9 +78,24 @@ class TransactionController extends Controller {
             
             $firstTransaction = Transaction::where('group_uuid', $groupUuid)->first();
 
+            // Descobre exatamente onde o Laravel está gravando
+            $dbName = DB::connection()->getDatabaseName();
+            $dbHost = DB::connection()->getConfig('host');
+            $totalTransactions = Transaction::count();
+
+            Log::info('Diagnóstico de Gravação', [
+                'database' => $dbName,
+                'host' => $dbHost,
+                'total_rows_in_table' => $totalTransactions
+            ]);
+
             return response()->json([
                 'message' => 'Lançamento salvo com sucesso!',
-                'debug_id' => $firstTransaction ? $firstTransaction->id : null
+                'debug_info' => [
+                    'database' => $dbName,
+                    'host' => $dbHost,
+                    'total_in_table' => $totalTransactions
+                ]
             ], 201);
 
         } catch (\Exception $e) {
