@@ -30,41 +30,34 @@ class TransactionController extends Controller {
         ]);
 
         $userId = $request->user()->id;
-        $groupUuid = \Illuminate\Support\Str::uuid();
+        $groupUuid = Str::uuid();
         $totalCents = (int) round($validated['amount'] * 100);
         $installments = $validated['installments'];
         
         $baseCents = intdiv($totalCents, $installments);
         $remainderCents = $totalCents % $installments;
-        $baseDate = \Carbon\Carbon::parse($validated['due_date']);
+        $baseDate = Carbon::parse($validated['due_date']);
 
-        try {
-            DB::transaction(function () use ($validated, $userId, $groupUuid, $installments, $baseCents, $remainderCents, $baseDate) {
-                for ($i = 1; $i <= $installments; $i++) {
-                    $targetDate = $baseDate->copy()->addMonths($i - 1);
-                    $installmentCents = ($i === 1) ? ($baseCents + $remainderCents) : $baseCents;
-                    $status = ($i === 1) ? $validated['initial_status'] : 'pending';
+        DB::transaction(function () use ($validated, $userId, $groupUuid, $installments, $baseCents, $remainderCents, $baseDate) {
+            for ($i = 1; $i <= $installments; $i++) {
+                $targetDate = $baseDate->copy()->addMonths($i - 1);
+                $installmentCents = ($i === 1) ? ($baseCents + $remainderCents) : $baseCents;
+                $status = ($i === 1) ? $validated['initial_status'] : 'pending';
 
-                    \App\Models\Transaction::create([
-                        'user_id' => $userId,
-                        'group_uuid' => $groupUuid,
-                        'description' => $validated['description'],
-                        'category' => $validated['category'],
-                        'amount' => $installmentCents / 100,
-                        'current_installment' => $i,
-                        'total_installments' => $installments,
-                        'due_date' => $targetDate->toDateString(),
-                        'type' => $validated['type'],
-                        'status' => $status
-                    ]);
-                }
-            });
-        } catch (\Exception $e) {
-            // O DB::transaction faz o rollback automático se houver exceção,
-            // mas capturamos aqui para retornar um JSON amigável e logar o erro real.
-            \Illuminate\Support\Facades\Log::error("Erro ao salvar parcelas: " . $e->getMessage());
-            return response()->json(['message' => 'Erro interno ao salvar transação: ' . $e->getMessage()], 500);
-        }
+                Transaction::create([
+                    'user_id' => $userId,
+                    'group_uuid' => $groupUuid,
+                    'description' => $validated['description'],
+                    'category' => $validated['category'],
+                    'amount' => $installmentCents / 100,
+                    'current_installment' => $i,
+                    'total_installments' => $installments,
+                    'due_date' => $targetDate->toDateString(),
+                    'type' => $validated['type'],
+                    'status' => $status
+                ]);
+            }
+        });
 
         return response()->json(['message' => 'Lançamento salvo com sucesso!'], 201);
     }
