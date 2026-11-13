@@ -76,7 +76,7 @@ Route::get('/teste-migration-neon', function () {
 
     try {
 
-        DB::beginTransaction();
+        DB::connection()->enableQueryLog();
 
         Schema::create('teste_users', function (Blueprint $table) {
             $table->id();
@@ -112,12 +112,15 @@ Route::get('/teste-migration-neon', function () {
 
     } catch (\Throwable $e) {
 
-        DB::rollBack();
+        $queries = DB::connection()->getQueryLog();
+
+    DB::rollBack();
 
         return response()->json([
             'success' => false,
             'error' => $e->getMessage(),
             'previous' => $e->getPrevious()?->getMessage(),
+            'queries' => $queries,
         ], 500);
     }
 });
