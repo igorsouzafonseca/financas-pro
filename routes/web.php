@@ -3,6 +3,14 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TransactionController;
+use Illuminate\Support\Facades\Artisan;
+
+// COMANDO TEMPORÁRIO PARA RODAR NA VERCEL (Remover depois)
+try {
+    Artisan::call('migrate', ['--force' => true]);
+} catch (\Exception $e) {
+    // Ignora se já rodou ou se houver conflito momentâneo
+}
 
 Route::get('/', function () {
     return view('welcome');
