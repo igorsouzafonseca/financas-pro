@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Exception;
+use Illuminate\Support\Facades\Log;
 
 class TransactionController extends Controller {
     public function index(Request $request) {
@@ -19,6 +21,12 @@ class TransactionController extends Controller {
     }
 
     public function store(Request $request) {
+        // 1. Registra no log o payload exato que chegou do front-end
+        Log::info('Tentativa de criar transação', [
+            'user_id' => $request->user()->id,
+            'payload' => $request->all()
+        ]);
+
         $validated = $request->validate([
             'description' => ['required', 'string', 'max:180'],
             'category' => ['required', 'string', 'max:60'],
@@ -38,26 +46,36 @@ class TransactionController extends Controller {
         $remainderCents = $totalCents % $installments;
         $baseDate = Carbon::parse($validated['due_date']);
 
-        DB::transaction(function () use ($validated, $userId, $groupUuid, $installments, $baseCents, $remainderCents, $baseDate) {
-            for ($i = 1; $i <= $installments; $i++) {
-                $targetDate = $baseDate->copy()->addMonths($i - 1);
-                $installmentCents = ($i === 1) ? ($baseCents + $remainderCents) : $baseCents;
-                $status = ($i === 1) ? $validated['initial_status'] : 'pending';
+        try {
+            DB::transaction(function () use ($validated, $userId, $groupUuid, $installments, $baseCents, $remainderCents, $baseDate) {
+                for ($i = 1; $i <= $installments; $i++) {
+                    $targetDate = $baseDate->copy()->addMonths($i - 1);
+                    $installmentCents = ($i === 1) ? ($baseCents + $remainderCents) : $baseCents;
+                    $status = ($i === 1) ? $validated['initial_status'] : 'pending';
 
-                Transaction::create([
-                    'user_id' => $userId,
-                    'group_uuid' => $groupUuid,
-                    'description' => $validated['description'],
-                    'category' => $validated['category'],
-                    'amount' => $installmentCents / 100,
-                    'current_installment' => $i,
-                    'total_installments' => $installments,
-                    'due_date' => $targetDate->toDateString(),
-                    'type' => $validated['type'],
-                    'status' => $status
-                ]);
-            } 
-        });
+                    Transaction::create([
+                        'user_id' => $userId,
+                        'group_uuid' => $groupUuid,
+                        'description' => $validated['description'],
+                        'category' => $validated['category'],
+                        'amount' => $installmentCents / 100,
+                        'current_installment' => $i,
+                        'total_installments' => $installments,
+                        'due_date' => $targetDate->toDateString(),
+                        'type' => $validated['type'],
+                        'status' => $status
+                    ]);
+                }
+            });
+
+            Log::info('Transação criada com sucesso!', ['group_uuid' => $groupUuid]);
+
+        } catch (\Exception $e) {
+            Log::error('Erro crítico ao salvar transação: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['message' => 'Erro interno ao salvar transação.'], 500);
+        }
 
         return response()->json(['message' => 'Lançamento salvo com sucesso!'], 201);
     }
