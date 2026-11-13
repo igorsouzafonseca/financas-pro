@@ -20,7 +20,8 @@ class TransactionController extends Controller {
         return response()->json(['transactions' => $transactions]);
     }
 
-    public function store(Request $request) {
+    public function store(Request $request) 
+    {
         // 1. Registra no log o payload exato que chegou do front-end
         Log::info('Tentativa de criar transação', [
             'user_id' => $request->user()->id,
@@ -51,6 +52,9 @@ class TransactionController extends Controller {
                 $rows = [];
 
                 for ($i = 1; $i <= $installments; $i++) {
+                    // Ajusta o mês: parcela 1 usa o mês base (i-1 = 0), parcela 2 adiciona 1 mês, etc.
+                    $installmentDate = $baseDate->copy()->addMonths($i - 1)->toDateString();
+
                     $rows[] = [
                         'user_id'             => $userId,
                         'group_uuid'          => $groupUuid,
@@ -59,7 +63,7 @@ class TransactionController extends Controller {
                         'amount'              => (($i === 1) ? ($baseCents + $remainderCents) : $baseCents) / 100,
                         'current_installment' => $i,
                         'total_installments'  => $installments,
-                        'due_date'            => $baseDate->copy()->addMonths($i - 1)->toDateString(),
+                        'due_date'            => $installmentDate,
                         'type'                => $validated['type'],
                         'status'              => ($i === 1) ? $validated['initial_status'] : 'pending',
                         'created_at'          => now(),
@@ -71,7 +75,7 @@ class TransactionController extends Controller {
             });
 
             Log::info('Transação criada com sucesso!', ['group_uuid' => $groupUuid]);
-            // No final do método store, antes do return:
+            
             $firstTransaction = Transaction::where('group_uuid', $groupUuid)->first();
 
             return response()->json([
@@ -85,8 +89,6 @@ class TransactionController extends Controller {
             ]);
             return response()->json(['message' => 'Erro interno ao salvar transação.'], 500);
         }
-
-        return response()->json(['message' => 'Lançamento salvo com sucesso!'], 201);
     }
 
     public function toggleStatus(Request $request, $id) {
