@@ -85,9 +85,13 @@ class TransactionController extends Controller {
 
         } catch (\Exception $e) {
             Log::error('Erro crítico ao salvar transação: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-            return response()->json(['message' => 'Erro interno ao salvar transação.'], 500);
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        // Retorna o erro exato temporariamente para vermos na tela do navegador/dev tools
+        return response()->json([
+            'message' => 'Erro ao salvar: ' . $e->getMessage()
+        ], 500);
         }
     }
 
