@@ -48,24 +48,26 @@ class TransactionController extends Controller {
 
         try {
             DB::transaction(function () use ($validated, $userId, $groupUuid, $installments, $baseCents, $remainderCents, $baseDate) {
-                for ($i = 1; $i <= $installments; $i++) {
-                    $targetDate = $baseDate->copy()->addMonths($i - 1);
-                    $installmentCents = ($i === 1) ? ($baseCents + $remainderCents) : $baseCents;
-                    $status = ($i === 1) ? $validated['initial_status'] : 'pending';
+                $rows = [];
 
-                    Transaction::create([
-                        'user_id' => $userId,
-                        'group_uuid' => $groupUuid,
-                        'description' => $validated['description'],
-                        'category' => $validated['category'],
-                        'amount' => $installmentCents / 100,
+                for ($i = 1; $i <= $installments; $i++) {
+                    $rows[] = [
+                        'user_id'             => $userId,
+                        'group_uuid'          => $groupUuid,
+                        'description'         => $validated['description'],
+                        'category'            => $validated['category'],
+                        'amount'              => (($i === 1) ? ($baseCents + $remainderCents) : $baseCents) / 100,
                         'current_installment' => $i,
-                        'total_installments' => $installments,
-                        'due_date' => $targetDate->toDateString(),
-                        'type' => $validated['type'],
-                        'status' => $status
-                    ]);
+                        'total_installments'  => $installments,
+                        'due_date'            => $baseDate->copy()->addMonths($i - 1)->toDateString(),
+                        'type'                => $validated['type'],
+                        'status'              => ($i === 1) ? $validated['initial_status'] : 'pending',
+                        'created_at'          => now(),
+                        'updated_at'          => now(),
+                    ];
                 }
+
+                Transaction::insert($rows);
             });
 
             Log::info('Transação criada com sucesso!', ['group_uuid' => $groupUuid]);
