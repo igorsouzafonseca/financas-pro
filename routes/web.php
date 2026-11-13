@@ -4,16 +4,17 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Artisan;
-
-// COMANDO TEMPORÁRIO PARA RODAR NA VERCEL (Remover depois)
-try {
-    Artisan::call('migrate', ['--force' => true]);
-} catch (\Exception $e) {
-    // Ignora se já rodou ou se houver conflito momentâneo
-}
+use Illuminate\Support\Facades\Log;
 
 Route::get('/', function () {
-    return view('welcome');
+    try {
+        Artisan::call('migrate', ['--force' => true]);
+        Log::info('Migração executada via rota raiz com sucesso.');
+        return 'Migrações executadas com sucesso no banco da Neon!';
+    } catch (\Exception $e) {
+        Log::error('Erro ao rodar migrate na rota: ' . $e->getMessage());
+        return 'Erro ao migrar: ' . $e->getMessage();
+    }
 });
 
 // Rotas públicas de autenticação (Com controle de força bruta throttle)
