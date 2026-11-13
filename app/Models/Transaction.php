@@ -9,17 +9,33 @@ class Transaction extends Model
 {
     use HasFactory;
 
+    protected $table = 'transactions';
+
     protected $fillable = [
-        'user_id', 'group_uuid', 'description', 'category', 
-        'amount', 'current_installment', 'total_installments', 
-        'due_date', 'type', 'status'
+        'user_id',
+        'group_uuid',
+        'description',
+        'category',
+        'amount',
+        'current_installment',
+        'total_installments',
+        'due_date',
+        'type',
+        'status'
     ];
 
-    protected function casts(): array {
-        return [
-            'amount' => 'decimal:2',
-            'current_installment' => 'integer',
-            'total_installments' => 'integer',
-        ];
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'due_date' => 'date',
+        'current_installment' => 'integer',
+        'total_installments' => 'integer',
+    ];
+
+    /**
+     * Relacionamento com o usuário proprietário da transação.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }
