@@ -70,6 +70,60 @@ Route::get('/teste-neon', function () {
     }
 });
 
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+Route::get('/teste-migration-neon', function () {
+
+    try {
+
+        DB::beginTransaction();
+
+        Schema::create('teste_users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->string('role_title')->default('Conta Pessoal');
+            $table->decimal('monthly_budget', 12, 2)->default(0.00);
+            $table->timestamps();
+        });
+
+        Schema::create('teste_password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('teste_sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
+        });
+
+        DB::rollBack();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Todas as estruturas foram criadas com sucesso!'
+        ]);
+
+    } catch (\Throwable $e) {
+
+        DB::rollBack();
+
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'previous' => $e->getPrevious()?->getMessage(),
+        ], 500);
+    }
+});
+
 Route::get('/', function () {
     return view('welcome');
 });
