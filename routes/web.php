@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 
@@ -30,6 +31,41 @@ Route::get('/migrar', function () {
             'message' => $e->getMessage(),
             'previous' => $e->getPrevious()?->getMessage(),
             'output' => Artisan::output(),
+        ], 500);
+    }
+});
+
+
+Route::get('/teste-neon', function () {
+
+    try {
+
+        DB::purge('pgsql');
+
+        DB::connection('pgsql')->beginTransaction();
+
+        DB::statement('
+            CREATE TABLE teste_neon (
+                id BIGSERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE
+            )
+        ');
+
+        DB::rollBack();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Teste executado com sucesso!'
+        ]);
+
+    } catch (\Throwable $e) {
+
+        DB::rollBack();
+
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'previous' => $e->getPrevious()?->getMessage(),
         ], 500);
     }
 });
