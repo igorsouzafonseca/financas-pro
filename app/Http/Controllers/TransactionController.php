@@ -56,7 +56,7 @@ class TransactionController extends Controller {
                     'type' => $validated['type'],
                     'status' => $status
                 ]);
-            }
+            } 
         });
 
         return response()->json(['message' => 'Lançamento salvo com sucesso!'], 201);
