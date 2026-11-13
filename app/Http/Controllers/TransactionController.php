@@ -69,6 +69,13 @@ class TransactionController extends Controller {
             });
 
             Log::info('Transação criada com sucesso!', ['group_uuid' => $groupUuid]);
+            // No final do método store, antes do return:
+            $firstTransaction = Transaction::where('group_uuid', $groupUuid)->first();
+
+            return response()->json([
+                'message' => 'Lançamento salvo com sucesso!',
+                'debug_id' => $firstTransaction ? $firstTransaction->id : null
+            ], 201);
 
         } catch (\Exception $e) {
             Log::error('Erro crítico ao salvar transação: ' . $e->getMessage(), [

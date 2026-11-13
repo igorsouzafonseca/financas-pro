@@ -26,7 +26,7 @@ class Transaction extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
-        'due_date' => 'date',
+        //'due_date' => 'date',
         'current_installment' => 'integer',
         'total_installments' => 'integer',
     ];
