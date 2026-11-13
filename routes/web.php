@@ -74,9 +74,10 @@ Route::get('/teste-neon', function () {
 
 Route::get('/teste-migration-neon', function () {
 
+    $connection = DB::connection('pgsql');
     try {
 
-        DB::connection()->enableQueryLog();
+         $connection->enableQueryLog();
 
         Schema::create('users', function (Blueprint $table) {
             $table->id();
@@ -177,24 +178,19 @@ Route::get('/teste-migration-neon', function () {
             $table->index(['user_id', 'group_uuid']);
         });
 
-        DB::rollBack();
-
         return response()->json([
             'success' => true,
-            'message' => 'Todas as estruturas foram criadas com sucesso!'
+            'message' => 'Todas as estruturas foram criadas com sucesso!',
+            'queries' => $connection->getQueryLog(),
         ]);
 
     } catch (\Throwable $e) {
-
-        $queries = DB::connection()->getQueryLog();
-
-    DB::rollBack();
 
         return response()->json([
             'success' => false,
             'error' => $e->getMessage(),
             'previous' => $e->getPrevious()?->getMessage(),
-            'queries' => $queries,
+            'queries' => $connection->getQueryLog(),
         ], 500);
     }
 });
