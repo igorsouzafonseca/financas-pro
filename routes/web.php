@@ -6,6 +6,8 @@ use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 
 Route::get('/migrar', function () {
@@ -69,10 +71,6 @@ Route::get('/teste-neon', function () {
         ], 500);
     }
 });
-
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 Route::get('/teste-migration-neon', function () {
 
