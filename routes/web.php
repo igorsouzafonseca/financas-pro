@@ -9,19 +9,18 @@ use Illuminate\Support\Facades\Log;
 
 Route::get('/', function () {
     try {
-        // Garante o encerramento de qualquer transação travada anterior
+        // Força o encerramento de qualquer transação abortada pendente no PostgreSQL
+        DB::statement('ABORT;');
         DB::rollBack();
 
-        // Executa o migrate:fresh forçado para recriar tudo limpo
-        Artisan::call('migrate:fresh', [
-            '--force' => true,
-        ]);
+        // Roda as migrações normalmente
+        Artisan::call('migrate', ['--force' => true]);
 
-        Log::info('Banco limpo e migrado com sucesso via rota.');
-        return 'Banco recriado (migrate:fresh) com sucesso na Neon!';
+        Log::info('Migração executada com sucesso.');
+        return 'Banco migrado e estruturado com sucesso na Neon!';
     } catch (\Exception $e) {
-        Log::error('Erro ao rodar migrate:fresh: ' . $e->getMessage());
-        return 'Erro ao recriar banco: ' . $e->getMessage();
+        Log::error('Erro ao migrar: ' . $e->getMessage());
+        return 'Erro ao migrar: ' . $e->getMessage();
     }
 });
 
