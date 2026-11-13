@@ -4,16 +4,24 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 Route::get('/', function () {
     try {
-        Artisan::call('migrate', ['--force' => true]);
-        Log::info('Migração executada via rota raiz com sucesso.');
-        return 'Migrações executadas com sucesso no banco da Neon!';
+        // Garante o encerramento de qualquer transação travada anterior
+        DB::rollBack();
+
+        // Executa o migrate:fresh forçado para recriar tudo limpo
+        Artisan::call('migrate:fresh', [
+            '--force' => true,
+        ]);
+
+        Log::info('Banco limpo e migrado com sucesso via rota.');
+        return 'Banco recriado (migrate:fresh) com sucesso na Neon!';
     } catch (\Exception $e) {
-        Log::error('Erro ao rodar migrate na rota: ' . $e->getMessage());
-        return 'Erro ao migrar: ' . $e->getMessage();
+        Log::error('Erro ao rodar migrate:fresh: ' . $e->getMessage());
+        return 'Erro ao recriar banco: ' . $e->getMessage();
     }
 });
 
