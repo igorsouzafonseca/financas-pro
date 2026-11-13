@@ -4,24 +4,38 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-Route::get('/', function () {
+
+Route::get('/migrar', function () {
+
     try {
-        // Força o encerramento de qualquer transação abortada pendente no PostgreSQL
-        DB::statement('ABORT;');
-        DB::rollBack();
 
-        // Roda as migrações normalmente
-        Artisan::call('migrate', ['--force' => true]);
+        DB::purge('pgsql');
 
-        Log::info('Migração executada com sucesso.');
-        return 'Banco migrado e estruturado com sucesso na Neon!';
-    } catch (\Exception $e) {
-        Log::error('Erro ao migrar: ' . $e->getMessage());
-        return 'Erro ao migrar: ' . $e->getMessage();
+        Artisan::call('migrate:fresh', [
+            '--force' => true,
+            '--verbose' => true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'output' => Artisan::output()
+        ]);
+
+    } catch (\Throwable $e) {
+
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+            'previous' => $e->getPrevious()?->getMessage(),
+            'output' => Artisan::output(),
+        ], 500);
     }
+});
+
+Route::get('/', function () {
+    return view('welcome');
 });
 
 // Rotas públicas de autenticação (Com controle de força bruta throttle)
